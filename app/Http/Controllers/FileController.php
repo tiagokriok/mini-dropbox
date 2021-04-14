@@ -2,12 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Obj;
 use Illuminate\Http\Request;
 
 class FileController extends Controller
 {
-    public function index()
+    public function _construct()
     {
-        return view('files');
+        $this->middleware(['auth']);
+    }
+    public function index(Request $request)
+    {
+        $object = Obj::with('children.objectable', 'ancestorsAndSelf.objectable')->forCurrentTeam()->where(
+            'uuid',
+            $request->get('uuid', Obj::forCurrentTeam()->whereNull('parent_id')->first()->uuid)
+        )
+            ->firstOrFail();
+
+        return view('files', [
+            'object' => $object,
+            'ancestors' => $object->ancestorsAndSelf()->breadthFirst()->get()
+        ]);
     }
 }
