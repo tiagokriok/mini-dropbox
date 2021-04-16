@@ -6,11 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use App\Models\Traits\RelatesToTeams;
+use Laravel\Scout\Searchable;
 use Staudenmeir\LaravelAdjacencyList\Eloquent\HasRecursiveRelationships;
 
 class Obj extends Model
 {
-    use HasFactory, RelatesToTeams, HasRecursiveRelationships;
+    use HasFactory, RelatesToTeams, HasRecursiveRelationships, Searchable;
+
+    public $asYouType = true;
 
     public $table = 'objects';
 
@@ -22,6 +25,11 @@ class Obj extends Model
     {
         static::creating(function ($model) {
             $model->uuid = Str::uuid();
+        });
+
+        static::deleting(function ($model) {
+            optional($model->objectable)->delete();
+            $model->descendants->each->delete();
         });
     }
 

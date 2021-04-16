@@ -94,7 +94,7 @@
                             </td>
                             <td class="py-2 px-3">
                                 @if ($child->objectable_type ==='file')
-                                    {{ $child->objectable->size }}
+                                    {{ $child->objectable->sizeForHumans()}}
                                 @else
                                     &mdash;
                                 @endif
@@ -109,7 +109,8 @@
                                             <button class="text-gray-400 font-bold" wire:click="$set('renamingObject',{{$child->id}})">Renomear</button>
                                         </li>
                                         <li>
-                                            <button class="text-red-400 font-bold">Excluir</button>
+                                            <button class="text-red-400 font-bold"
+                                                wire:click="$set('confirmingObjectDeletion', {{ $child->id }})">Excluir</button>
                                         </li>
                                     </ul>
                                 </div>
@@ -126,6 +127,23 @@
         @endif
     </div>
 
+    <x-jet-dialog-modal wire:model="confirmingObjectDeletion">
+        <x-slot name="title">
+            {{ __('Deletar') }}
+        </x-slot>
+        <x-slot name="content">
+            {{ __('Tem certeza que deseja excluir isso?') }}
+        </x-slot>
+        <x-slot name="footer">
+            <x-jet-secondary-button wire:click="$set('confirmingObjectDeletion', null)">
+            {{__('Cancelar')}}
+            </x-jet-secondary-button>
+            <x-jet-danger-button class="ml-2" wire:click="deleteObject">
+            {{__('Excluir')}}
+            </x-jet-danger-button>
+        </x-slot>
+    </x-jet-dialog-modal>
+
     <x-jet-modal wire:model="showingFileUploadForm">
         <div
             wire:ignore
@@ -133,7 +151,19 @@
             x-data="{
                 initFilepond () {
                     const pond = FilePond.create(this.$refs.filepond, {
+                        onprocessfile: (error, file) => {
+                            pond.removeFile(file.id)
 
+                            if (pond.getFiles().length === 0) {
+                                @this.set('showingFileUploadForm', false)
+                            }
+                        },
+                        allowRevert: false,
+                        server: {
+                            process: (fieldName, file, metadata, load, error, progress, abort, transfer, options) => {
+                                @this.upload('upload', file, load, error, progress)
+                            }
+                        }
                     })
                 }
             }"
